@@ -2,90 +2,107 @@
 
 namespace LabWork
 {
-    public class РівностороннійТрикутник
+    /// <summary>
+    /// Базовий клас для роботи з полярною системою координат
+    /// </summary>
+    public class ПолярнаСистемаКоординат
     {
-        private double _сторона;
-        private const double _кут = 60; // Всі кути в рівносторонньому трикутнику = 60°
+        private double _радіус;
+        private double _кут; // у градусах
 
-        public РівностороннійТрикутник(double сторона)
+        public ПолярнаСистемаКоординат(double радіус, double кут)
         {
-            if (сторона <= 0)
-                throw new ArgumentException("Довжина сторони має бути додатньою");
-            _сторона = сторона;
+            if (радіус < 0)
+                throw new ArgumentException("Радіус не може бути від'ємним");
+            if (кут < 0 || кут >= 360)
+                throw new ArgumentException("Кут має бути в діапазоні [0, 360)");
+
+            _радіус = радіус;
+            _кут = кут;
         }
 
-        public virtual void ВстановитиСторону(double сторона)
+        public double Радіус
         {
-            if (сторона <= 0)
-                throw new ArgumentException("Довжина сторони має бути додатньою");
-            _сторона = сторона;
+            get => _радіус;
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentException("Радіус не може бути від'ємним");
+                _радіус = value;
+            }
         }
 
-        public virtual double ОтриматиСторону()
+        public double Кут
         {
-            return _сторона;
+            get => _кут;
+            set
+            {
+                if (value < 0 || value >= 360)
+                    throw new ArgumentException("Кут має бути в діапазоні [0, 360)");
+                _кут = value;
+            }
         }
 
-        public virtual double ОтриматиКут()
+        /// <summary>
+        /// Перетворення з полярної в декартову систему
+        /// </summary>
+        public virtual (double x, double y) ПеретворитиУДекартову()
         {
-            return _кут;
-        }
-
-        public virtual double ОбчислитиПериметр()
-        {
-            return 3 * _сторона;
+            double радіанів = _кут * Math.PI / 180;
+            double x = _радіус * Math.Cos(радіанів);
+            double y = _радіус * Math.Sin(радіанів);
+            return (x, y);
         }
 
         public override string ToString()
         {
-            return $"Рівносторонній трикутник: сторона = {_сторона:F2}, кут = {_кут}°";
+            return $"Полярна система: r = {_радіус:F2}, θ = {_кут}°";
         }
     }
 
-    public class Трикутник : РівностороннійТрикутник
+    /// <summary>
+    /// Клас для роботи з декартовою системою координат
+    /// </summary>
+    public class ДекартоваСистемаКоординат
     {
-        private double _кут1;
-        private double _кут2;
-        private double _сторона2;
-        private double _сторона3;
+        private double _x;
+        private double _y;
 
-        public Трикутник(double сторона, double кут1, double кут2) : base(сторона)
+        public ДекартоваСистемаКоординат(double x, double y)
         {
-            if (кут1 <= 0 || кут2 <= 0)
-                throw new ArgumentException("Кути мають бути додатніми");
-            if (кут1 + кут2 >= 180)
-                throw new ArgumentException("Сума двох кутів не може бути більшою або рівною 180°");
-
-            _кут1 = кут1;
-            _кут2 = кут2;
-            ОбчислитиІншіСторони();
+            _x = x;
+            _y = y;
         }
 
-        private void ОбчислитиІншіСторони()
+        public double X
         {
-            double кут3 = 180 - _кут1 - _кут2;
-            double a = ОтриматиСторону();
-
-            // Використання теореми синусів для обчислення інших сторін
-            _сторона2 = a * Math.Sin(_кут2 * Math.PI / 180) / Math.Sin(кут3 * Math.PI / 180);
-            _сторона3 = a * Math.Sin(_кут1 * Math.PI / 180) / Math.Sin(кут3 * Math.PI / 180);
+            get => _x;
+            set => _x = value;
         }
 
-        public override double ОбчислитиПериметр()
+        public double Y
         {
-            return ОтриматиСторону() + _сторона2 + _сторона3;
+            get => _y;
+            set => _y = value;
         }
 
-        public double ОтриматиКут1() => _кут1;
-        public double ОтриматиКут2() => _кут2;
-        public double ОтриматиКут3() => 180 - _кут1 - _кут2;
-        public double ОтриматиСторону2() => _сторона2;
-        public double ОтриматиСторону3() => _сторона3;
+        /// <summary>
+        /// Перетворення з декартової в полярну систему
+        /// </summary>
+        public (double r, double angle) ПеретворитиУПолярну()
+        {
+            double радіус = Math.Sqrt(_x * _x + _y * _y);
+            double кут = Math.Atan2(_y, _x) * 180 / Math.PI;
+            
+            if (кут < 0)
+                кут += 360;
+            
+            return (радіус, кут);
+        }
 
         public override string ToString()
         {
-            return $"Трикутник: сторони = {ОтриматиСторону():F2}, {_сторона2:F2}, {_сторона3:F2}; " +
-                   $"кути = {_кут1}°, {_кут2}°, {ОтриматиКут3()}°";
+            return $"Декартова система: x = {_x:F2}, y = {_y:F2}";
         }
     }
 
@@ -97,17 +114,19 @@ namespace LabWork
             {
                 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-                // Створення рівностороннього трикутника
-                РівностороннійТрикутник рівнТрикутник = new РівностороннійТрикутник(5);
-                Console.WriteLine(рівнТрикутник);
-                Console.WriteLine($"Периметр: {рівнТрикутник.ОбчислитиПериметр():F2}");
+                // Створення точки в полярній системі
+                ПолярнаСистемаКоординат полярна = new ПолярнаСистемаКоординат(5, 45);
+                Console.WriteLine(полярна);
+                var (x, y) = полярна.ПеретворитиУДекартову();
+                Console.WriteLine($"У декартовій системі: x = {x:F2}, y = {y:F2}");
 
                 Console.WriteLine();
 
-                // Створення звичайного трикутника
-                Трикутник трикутник = new Трикутник(6, 45, 60);
-                Console.WriteLine(трикутник);
-                Console.WriteLine($"Периметр: {трикутник.ОбчислитиПериметр():F2}");
+                // Створення точки в декартовій системі
+                ДекартоваСистемаКоординат декартова = new ДекартоваСистемаКоординат(3, 4);
+                Console.WriteLine(декартова);
+                var (r, angle) = декартова.ПеретворитиУПолярну();
+                Console.WriteLine($"У полярній системі: r = {r:F2}, θ = {angle:F2}°");
             }
             catch (ArgumentException ex)
             {
